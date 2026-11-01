@@ -61,12 +61,13 @@ public final class ShellAudioPolicyCaptureProbe {
                 throw new IllegalArgumentException("Usage: <packageName|targetUid> [seconds=15] [gain=1.0]");
             }
 
+            Context context = systemContext();
             final String targetSelector = args[0];
             final int targetUid;
             try {
                 targetUid = Integer.parseInt(targetSelector);
             } catch (NumberFormatException notNumericUid) {
-                targetUid = systemContext().getPackageManager()
+                targetUid = context.getPackageManager()
                         .getApplicationInfo(targetSelector, 0).uid;
             }
             final int durationSeconds = args.length > 1
@@ -74,7 +75,6 @@ public final class ShellAudioPolicyCaptureProbe {
             final float gain = args.length > 2
                     ? Math.max(0.0f, Math.min(1.0f, Float.parseFloat(args[2]))) : 1.0f;
 
-            Context context = systemContext();
             audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
             if (audioManager == null) {
                 throw new IllegalStateException("AudioManager unavailable");
