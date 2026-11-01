@@ -27,7 +27,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Adjust each detected app independently. This uses the app's audio session and works only while 32steps can attach its audio processor to that session. Newer Android versions and app support are required."
+            android:text="Adjust detected apps independently. 100% leaves the level unchanged; 0% applies strong attenuation. Control works only while 32steps can attach its audio processor to the app's audio session."
             android:textColor="?colorOnSurfaceVariant"
             android:textSize="13sp"
             android:layout_marginBottom="12dp" />
@@ -36,7 +36,7 @@
             android:id="@+id/btn_separate_app_sound"
             android:layout_width="match_parent"
             android:layout_height="44dp"
-            android:text="Open Samsung Separate app sound"
+            android:text="Open Sounds and vibration settings"
             android:textSize="13sp"
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
