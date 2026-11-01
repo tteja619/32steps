@@ -41,6 +41,7 @@ public final class ShellAudioPolicyCaptureProbe {
         AudioRecord record = null;
         AudioTrack track = null;
         int registerResult = Integer.MIN_VALUE;
+        int processExitCode = 0;
         long bytesRead = 0L;
         long bytesWritten = 0L;
         long sumSquares = 0L;
@@ -57,10 +58,17 @@ public final class ShellAudioPolicyCaptureProbe {
                 throw new SecurityException("Expected shell UID 2000, got " + Process.myUid());
             }
             if (args.length < 1) {
-                throw new IllegalArgumentException("Usage: <targetUid> [seconds=15] [gain=1.0]");
+                throw new IllegalArgumentException("Usage: <packageName|targetUid> [seconds=15] [gain=1.0]");
             }
 
-            final int targetUid = Integer.parseInt(args[0]);
+            final String targetSelector = args[0];
+            final int targetUid;
+            try {
+                targetUid = Integer.parseInt(targetSelector);
+            } catch (NumberFormatException notNumericUid) {
+                targetUid = systemContext().getPackageManager()
+                        .getApplicationInfo(targetSelector, 0).uid;
+            }
             final int durationSeconds = args.length > 1
                     ? Math.max(3, Math.min(30, Integer.parseInt(args[1]))) : 15;
             final float gain = args.length > 2
@@ -74,6 +82,7 @@ public final class ShellAudioPolicyCaptureProbe {
 
             String[] packages = context.getPackageManager().getPackagesForUid(targetUid);
             print("PROCESS_UID=" + Process.myUid());
+            print("TARGET_SELECTOR=" + targetSelector);
             print("TARGET_UID=" + targetUid);
             print("TARGET_PACKAGES=" + Arrays.toString(packages));
             print("DURATION_SECONDS=" + durationSeconds);
@@ -140,7 +149,7 @@ public final class ShellAudioPolicyCaptureProbe {
             registerResult = (Integer) invoke(audioManager, "android.media.AudioManager",
                     "registerAudioPolicy", new Class<?>[]{policyClass}, new Object[]{policy});
             print("REGISTER_AUDIO_POLICY_RESULT=" + registerResult);
-            if (registerResult != AudioManager.SUCCESS) {
+            if (registerResult != 0) {
                 throw new IllegalStateException("AudioPolicy registration failed: " + registerResult);
             }
 
@@ -229,6 +238,7 @@ public final class ShellAudioPolicyCaptureProbe {
         } catch (Throwable error) {
             Throwable root = error;
             while (root.getCause() != null && root.getCause() != root) root = root.getCause();
+            processExitCode = 2;
             print("CAPTURE_TEST_COMPLETE=false");
             print("ERROR=" + root.getClass().getName() + ": " + root.getMessage());
             Log.e(TAG, "UID loopback capture test failed", error);
@@ -244,7 +254,7 @@ public final class ShellAudioPolicyCaptureProbe {
                 try { track.stop(); } catch (Throwable ignored) {}
                 try { track.release(); } catch (Throwable ignored) {}
             }
-            if (policy != null && audioManager != null && registerResult == AudioManager.SUCCESS) {
+            if (policy != null && audioManager != null && registerResult == 0) {
                 try {
                     Class<?> policyClass = Class.forName("android.media.audiopolicy.AudioPolicy");
                     invoke(audioManager, "android.media.AudioManager", "unregisterAudioPolicy",
@@ -257,7 +267,7 @@ public final class ShellAudioPolicyCaptureProbe {
             System.out.flush();
             System.err.flush();
         }
-        System.exit(0);
+        System.exit(processExitCode);
     }
 
     private static Context systemContext() throws Exception {
