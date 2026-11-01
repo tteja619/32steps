@@ -29,6 +29,11 @@ public final class ShellAudioPolicyProbe {
         int result = Integer.MIN_VALUE;
 
         try {
+            // AudioPolicy and AudioManager may create Handler instances even
+            // when called from app_process. Prepare a Looper for this thread.
+            if (android.os.Looper.myLooper() == null) {
+                android.os.Looper.prepare();
+            }
             relaxHiddenApiForProbeProcess();
             Context context = obtainSystemContext();
             audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
