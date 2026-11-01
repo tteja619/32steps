@@ -69,4 +69,6 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.12.0")
+    // Embedded Android Debug Bridge client for Wireless Debugging shell access.
+    implementation("com.flyfishxu:kadb:2.1.5")
 }
