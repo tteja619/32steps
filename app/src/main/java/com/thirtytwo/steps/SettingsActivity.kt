@@ -24,6 +24,7 @@ class SettingsActivity : AppCompatActivity() {
         prefs = PrefsManager(this)
         volumeController = VolumeController.getInstance(this)
         caps = DeviceCapabilities.getInstance(this)
+        setupAppAudio()
 
         val isTv = packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
 
@@ -469,6 +470,17 @@ class SettingsActivity : AppCompatActivity() {
         manageBtn.setOnClickListener { view ->
             view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
             startActivity(Intent(this, DeviceMappingsActivity::class.java))
+        }
+    }
+
+    private fun setupAppAudio() {
+        findViewById<MaterialButton>(R.id.btn_manage_app_audio)?.setOnClickListener { view ->
+            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+            startActivity(Intent(this, AppAudioActivity::class.java))
+        }
+        findViewById<MaterialButton>(R.id.btn_separate_app_sound_settings)?.setOnClickListener { view ->
+            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+            AppAudioActivity.openSeparateAppSoundSettings(this)
         }
     }
 
