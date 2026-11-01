@@ -15,6 +15,13 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.software.leanback" android:required="false" />
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
@@ -52,6 +59,11 @@
 
         <activity
             android:name=".PerAppEqActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ThirtyTwoSteps" />
+
+        <activity
+            android:name=".AppAudioActivity"
             android:exported="false"
             android:theme="@style/Theme.ThirtyTwoSteps" />
 
