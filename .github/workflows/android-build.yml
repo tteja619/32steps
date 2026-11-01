@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/app-audio-controls
+      - feature/shell-audio-mixer
   pull_request:
     branches:
       - main
