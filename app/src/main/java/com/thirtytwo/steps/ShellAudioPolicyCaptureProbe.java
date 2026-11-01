@@ -63,7 +63,7 @@ public final class ShellAudioPolicyCaptureProbe {
 
             Context context = systemContext();
             final String targetSelector = args[0];
-            final int targetUid;
+            int targetUid;
             try {
                 targetUid = Integer.parseInt(targetSelector);
             } catch (NumberFormatException notNumericUid) {
