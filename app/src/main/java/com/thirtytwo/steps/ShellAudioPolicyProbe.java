@@ -38,7 +38,7 @@ public final class ShellAudioPolicyProbe {
 
             int uid = Process.myUid();
             print("PROCESS_UID=" + uid);
-            print("EXPECTED_SHELL_UID=" + Process.SHELL_UID);
+            print("EXPECTED_SHELL_UID=2000");
 
             Object ruleBuilder = construct("android.media.audiopolicy.AudioMixingRule$Builder");
             int matchUid = staticInt(
