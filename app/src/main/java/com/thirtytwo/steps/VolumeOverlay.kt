@@ -1,6 +1,7 @@
 package com.thirtytwo.steps
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.PixelFormat
 import android.media.AudioManager
 import android.os.Build
@@ -105,6 +106,7 @@ class VolumeOverlay(private val context: Context) {
                     setupRingerToggle()
                     setupExpandButton()
                     setupStreamSliders()
+                    setupAppAudioActions()
                 }
 
                 try {
@@ -208,12 +210,6 @@ class VolumeOverlay(private val context: Context) {
     private fun setupExpandButton() {
         expandBtn?.setOnClickListener {
             expandBtn?.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING)
-            // Check DND access before expanding
-            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-            if (!nm.isNotificationPolicyAccessGranted) {
-                // Can't open settings from overlay easily, just don't expand
-                return@setOnClickListener
-            }
             isExpanded = !isExpanded
             extraSliders?.visibility = if (isExpanded) View.VISIBLE else View.GONE
             expandBtn?.setImageResource(
@@ -228,6 +224,49 @@ class VolumeOverlay(private val context: Context) {
 
             if (isExpanded) refreshStreamSliders()
         }
+    }
+
+    private fun setupAppAudioActions() {
+        overlayView?.findViewById<View>(R.id.btn_app_audio_overlay)?.setOnClickListener { view ->
+            view.performHapticFeedback(
+                HapticFeedbackConstants.CONTEXT_CLICK,
+                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING
+            )
+            dismissImmediately()
+            try {
+                context.startActivity(
+                    Intent(context, AppAudioActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            } catch (_: Exception) {}
+        }
+
+        overlayView?.findViewById<View>(R.id.btn_separate_app_sound_overlay)?.setOnClickListener { view ->
+            view.performHapticFeedback(
+                HapticFeedbackConstants.CONTEXT_CLICK,
+                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING
+            )
+            dismissImmediately()
+            AppAudioActivity.openSeparateAppSoundSettings(context)
+        }
+    }
+
+    private fun dismissImmediately() {
+        hideRunnable?.let { handler.removeCallbacks(it) }
+        hideRunnable = null
+        val view = overlayView
+        if (view != null && isShowing) {
+            try { windowManager.removeView(view) } catch (_: Exception) {}
+        }
+        overlayView = null
+        seekBar = null
+        stepText = null
+        expandBtn = null
+        extraSliders = null
+        mediaLabel = null
+        isShowing = false
+        isExpanded = false
+        isDragging = false
     }
 
     private fun setupStreamSliders() {
