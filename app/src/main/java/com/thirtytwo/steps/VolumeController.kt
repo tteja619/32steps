@@ -136,7 +136,7 @@ class VolumeController(private val context: Context) {
                 dp.enabled = true
                 dynamicsProcessors[sessionId] = dp
                 recomputeUserEq()
-                applyDpGain(dp, gainOffsetForStep(currentStep))
+                applyDpGain(dp, gainOffsetForStep(currentStep), sessionId)
                 applyPreEq(dp, sessionId)
                 applyBassTuner(dp)
                 applyBassMbc(dp)
@@ -173,6 +173,34 @@ class VolumeController(private val context: Context) {
                 reverbs[sessionId] = r
             } catch (_: Exception) {}
         }
+    }
+
+    /**
+     * Save an app-specific media level and update all currently attached sessions
+     * belonging to that package. The gain is applied inside the existing per-session
+     * DynamicsProcessing chain, so it composes with 32steps' fine-volume gain.
+     */
+    fun setAppVolume(packageName: String, percent: Int) {
+        val value = percent.coerceIn(0, 100)
+        val mappings = prefs.appVolumeMappings.toMutableMap()
+        mappings[packageName] = value
+        prefs.appVolumeMappings = mappings
+
+        for ((sessionId, dp) in dynamicsProcessors) {
+            if (sessionPackages[sessionId] == packageName) {
+                applyDpGain(dp, gainOffsetForStep(currentStep), sessionId)
+            }
+        }
+    }
+
+    fun getAppVolume(packageName: String): Int =
+        prefs.appVolumeMappings[packageName] ?: 100
+
+    private fun appVolumeGainDb(packageName: String?): Float {
+        if (packageName == null) return 0f
+        val percent = prefs.appVolumeMappings[packageName] ?: 100
+        if (percent <= 0) return -60f
+        return (20f * ln(percent / 100f) / ln(10f)).coerceIn(-60f, 0f)
     }
 
     fun detachSession(sessionId: Int) {
@@ -849,7 +877,7 @@ class VolumeController(private val context: Context) {
         activeProfile = null // force reload from prefs (may have been updated by GraphicEqActivity)
         val entry = dynamicsProcessors.entries.firstOrNull() ?: return
         val dp = entry.value
-        applyDpGain(dp, savedCalibrationGain)
+        applyDpGain(dp, savedCalibrationGain, entry.key)
         applyPreEq(dp, entry.key)
         applyBassTuner(dp)
         applyBassMbc(dp)
@@ -870,14 +898,16 @@ class VolumeController(private val context: Context) {
     }
 
     private fun setAllGain(mb: Int) {
-        for ((_, dp) in dynamicsProcessors) applyDpGain(dp, mb)
+        for ((sessionId, dp) in dynamicsProcessors) applyDpGain(dp, mb, sessionId)
         for ((_, eq) in equalizers) applyEqGain(eq, mb)
     }
 
-    private fun applyDpGain(dp: DynamicsProcessing, mb: Int) {
+    private fun applyDpGain(dp: DynamicsProcessing, mb: Int, sessionId: Int? = null) {
         try {
             val baseGain = mb / 100f + cachedPreampDb
-            dp.setInputGainAllChannelsTo(baseGain)
+            val appPackage = sessionId?.let { sessionPackages[it] }
+            val combinedGain = (baseGain + appVolumeGainDb(appPackage)).coerceIn(-96f, 24f)
+            dp.setInputGainAllChannelsTo(combinedGain)
             applyChannelBalance(dp)
         } catch (_: Exception) {}
     }
