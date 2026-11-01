@@ -39,6 +39,30 @@ public final class ShellAudioPolicyProbe {
             int uid = Process.myUid();
             print("PROCESS_UID=" + uid);
             print("EXPECTED_SHELL_UID=2000");
+            int routingPermission = context.checkCallingOrSelfPermission(
+                    "android.permission.MODIFY_AUDIO_ROUTING");
+            print("MODIFY_AUDIO_ROUTING="
+                    + (routingPermission == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    ? "granted" : "denied"));
+
+            // Read the full active-player list while executing as the shell UID.
+            // Play a test track in another app before running this probe.
+            try {
+                java.util.List<?> active = audioManager.getActivePlaybackConfigurations();
+                print("ACTIVE_PLAYBACK_CONFIG_COUNT=" + active.size());
+                for (Object config : active) {
+                    int clientUid = (Integer) readHidden(config, "getClientUid");
+                    int sessionId = (Integer) readHidden(config, "getSessionId");
+                    Object state = readHidden(config, "getPlayerState");
+                    String[] packages = context.getPackageManager().getPackagesForUid(clientUid);
+                    print("ACTIVE_PLAYER uid=" + clientUid
+                            + " session=" + sessionId
+                            + " state=" + state
+                            + " packages=" + java.util.Arrays.toString(packages));
+                }
+            } catch (Throwable playbackError) {
+                print("PLAYBACK_QUERY_ERROR=" + playbackError);
+            }
 
             Object ruleBuilder = construct("android.media.audiopolicy.AudioMixingRule$Builder");
             int matchUid = staticInt(
@@ -172,6 +196,12 @@ public final class ShellAudioPolicyProbe {
             print("HIDDEN_API_EXEMPTION_WARNING=" + error.getClass().getSimpleName()
                     + ": " + error.getMessage());
         }
+    }
+
+    private static Object readHidden(Object receiver, String methodName) throws Exception {
+        Method method = receiver.getClass().getDeclaredMethod(methodName);
+        method.setAccessible(true);
+        return method.invoke(receiver);
     }
 
     private static int staticInt(String className, String fieldName) throws Exception {
