@@ -167,6 +167,25 @@ class PrefsManager(context: Context) {
         get() = prefs.getStringSet(KEY_RECENT_AUDIO_APPS, emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet(KEY_RECENT_AUDIO_APPS, value).apply()
 
+    /** Package name -> individual app volume percentage (0-100, default 100). */
+    var appVolumeMappings: Map<String, Int>
+        get() {
+            val json = prefs.getString(KEY_APP_VOLUME_MAPPINGS, null) ?: return emptyMap()
+            return try {
+                val obj = JSONObject(json)
+                obj.keys().asSequence().associateWith {
+                    obj.optInt(it, 100).coerceIn(0, 100)
+                }
+            } catch (_: Exception) { emptyMap() }
+        }
+        set(value) {
+            val obj = JSONObject()
+            for ((packageName, percent) in value) {
+                obj.put(packageName, percent.coerceIn(0, 100))
+            }
+            prefs.edit().putString(KEY_APP_VOLUME_MAPPINGS, obj.toString()).apply()
+        }
+
     /** 0=off, 1=graphic, 2=parametric */
     var eqMode: Int
         get() = prefs.getInt(KEY_EQ_MODE, 0)
@@ -331,6 +350,7 @@ class PrefsManager(context: Context) {
         private const val KEY_PER_APP_EQ = "per_app_eq_enabled"
         private const val KEY_APP_EQ_MAPPINGS = "app_eq_mappings"
         private const val KEY_RECENT_AUDIO_APPS = "recent_audio_apps"
+        private const val KEY_APP_VOLUME_MAPPINGS = "app_volume_mappings"
         private const val KEY_EQ_MODE = "eq_mode"
         private const val KEY_GRAPHIC_EQ_GAINS = "graphic_eq_gains"
         private const val KEY_PARAMETRIC_BANDS = "parametric_bands"
