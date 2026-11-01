@@ -104,15 +104,21 @@ public final class ShellAudioPolicyCaptureProbe {
                         + recordBuffer + ", track=" + trackBuffer);
             }
 
-            track = new AudioTrack.Builder()
-                    .setAudioAttributes(new AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .build())
-                    .setAudioFormat(format)
-                    .setTransferMode(AudioTrack.MODE_STREAM)
-                    .setBufferSizeInBytes(Math.max(trackBuffer * 2, 4096))
+            // Use the constructor without Context. In app_process the
+            // system Context carries system attribution (UID 1000), while this
+            // helper must create its output track as the shell process (UID 2000).
+            // This constructor uses AttributionSource.myAttributionSource().
+            AudioAttributes outputAttributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build();
+            track = new AudioTrack(
+                    outputAttributes,
+                    format,
+                    Math.max(trackBuffer * 2, 4096),
+                    AudioTrack.MODE_STREAM,
+                    AudioManager.AUDIO_SESSION_ID_GENERATE
+            );
             if (track.getState() != AudioTrack.STATE_INITIALIZED) {
                 throw new IllegalStateException("AudioTrack not initialized");
             }
